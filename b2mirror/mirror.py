@@ -37,7 +37,7 @@ class B2SyncManager(object):
         self.db.row_factory = B2SyncManager.dict_factory
         self.db.isolation_level = None # TBD - does it hurt perf?
         self.exclude_res = [
-            re.compile(r'.*\.(DS_Store|pyc)$')
+            re.compile(r'.*\.(DS_Store|pyc|dropbox)$')
         ]
         self._init_db()
 
@@ -75,20 +75,26 @@ class B2SyncManager(object):
         c.close()
 
     def sync(self):
+        # Phase 1 - Upload all local files missing on the remote
+        self.sync_up()
+        # Phase 2 - Delete files on the remote missing locally
+        self.purge_remote()
+
+    def sync_up(self):
         print("Syncing from {} to {}".format(self.src, self.dest))
 
-        print(i for i in self.src)
         chunk_size = 1000
 
-        while True:
-            chunk = list(
-                        filterfalse(  # if rel_path matches any of the REs, the filter is True and the file is skipped
+        files_source = filterfalse(  # if rel_path matches any of the REs, the filter is True and the file is skipped
                             lambda x: any([pattern.match(x.rel_path) for pattern in self.exclude_res]),
-                            islice(self.src, chunk_size)
-                        )
-                    )
+                                self.src
+                            )
+
+        while True:
+            chunk = list(islice(files_source, chunk_size))
 
             for item in chunk:
+                # long path names can't be put in sqlite
                 assert len(item.rel_path) < 512
 
             if len(chunk) == 0:

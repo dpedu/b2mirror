@@ -44,8 +44,8 @@ class B2SyncManager(object):
         self.db.isolation_level = None  # TBD - does it hurt perf?
         self.exclude_res = [
             re.compile(r'.*\.(DS_Store|pyc|dropbox)$'),
-            re.compile(r'.+__pycache__.+'),
-            re.compile(r'.+.dropbox\.cache.+')
+            re.compile(r'.*__pycache__.*'),
+            re.compile(r'.*\.dropbox\.cache.*')
         ] + (exclude_res if exclude_res else [])
         self.workers = workers
         self._init_db()

@@ -1,0 +1,10 @@
+__pycache__
+*.pyc
+b2mirror.egg-info
+build
+dist
+sync.db
+.DS_Store
+test.py
+test.sh
+

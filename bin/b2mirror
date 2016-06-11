@@ -9,6 +9,7 @@ from b2mirror import mirror
 def main():
     parser = argparse.ArgumentParser(description="Sync data to/from B2")
 
+    parser.add_argument("-i", "--size", help="Compare by size instead of mtime", action="store_true", default=False)
     parser.add_argument("-w", "--workers", help="Maximum parallel uploads", type=int, default=10)
 
     parser.add_argument("-s", "--source", required=True, help="Source URI")
@@ -17,13 +18,21 @@ def main():
     parser.add_argument("-a", "--account-id",   required=True, help="Backblaze account ID")
     parser.add_argument("-k", "--app-key",   required=True, help="Backblaze application key")
 
-    parser.add_argument("--exclude", nargs="+", help="Regexes to exclude from transfer")
+    parser.add_argument("--exclude", nargs="+", help="List of regexes to exclude from transfer")
 
     args = parser.parse_args()
 
     ignore_res = [re.compile(i) for i in args.exclude]
 
-    mirror.sync(args.source, args.dest, args.account_id, args.app_key, workers=args.workers, exclude=ignore_res)
+    mirror.sync(
+        args.source,
+        args.dest,
+        args.account_id,
+        args.app_key,
+        workers=args.workers,
+        exclude=ignore_res,
+        compare_method="size" if args.size else "mtime"
+    )
 
 if __name__ == '__main__':
     main()

@@ -29,7 +29,7 @@ Dest will upload the file, and inform the manager it was completed
 
 class B2SyncManager(object):
 
-    def __init__(self, source_module, dest_module, exclude_res=None, workers=10):
+    def __init__(self, source_module, dest_module, exclude_res=None, workers=10, compare_method="mtime"):
         """
         :param source_module: subclass instance of b2mirror.base.Provider acting as a file source
         :param dest_module: subclass of b2mirror.base.Receiver acting as a file destination
@@ -45,10 +45,16 @@ class B2SyncManager(object):
         self.exclude_res = [
             re.compile(r'.*\.(DS_Store|pyc|dropbox)$'),
             re.compile(r'.*__pycache__.*'),
-            re.compile(r'.*\.dropbox\.cache.*')
+            re.compile(r'.*\.dropbox\.cache.*'),
+            re.compile(r'.*\.AppleDouble.*')
         ] + (exclude_res if exclude_res else [])
         self.workers = workers
         self._init_db()
+
+        self.should_transfer = {
+            "mtime": self._should_transfer_mtime,
+            "size": self._should_transfer_size
+        }[compare_method]
 
     @staticmethod
     def dict_factory(cursor, row):
@@ -141,7 +147,10 @@ class B2SyncManager(object):
 
         row = c.execute("SELECT * FROM 'files' WHERE `path` = ?;", (f.rel_path,)).fetchone()
 
-        if not row or row['mtime'] < f.mtime:
+        if self.should_transfer(row, f):
+
+            # The file was uploaded, commit it to the db
+            c.execute("REPLACE INTO 'files' VALUES(?, ?, ?, ?);", (f.rel_path, f.mtime, f.size, 1))
 
             print("Uploading:", f.rel_path)
             try:
@@ -150,11 +159,6 @@ class B2SyncManager(object):
                 print("Failed:", f.rel_path)
                 print("Unexpected error:", sys.exc_info()[0])
                 raise
-            # print("Ok: ", f.rel_path)
-
-            # The file was uploaded, commit it to the db
-            c.execute("REPLACE INTO 'files' VALUES(?, ?, ?, ?);", (f.rel_path, f.mtime, f.size, 1))
-            # print("Done: ", f.rel_path)
 
         else:
             c.execute("UPDATE 'files' SET seen=1 WHERE `path` = ?;", (f.rel_path,)).fetchone()
@@ -164,6 +168,12 @@ class B2SyncManager(object):
         c.close()
 
         return result
+
+    def _should_transfer_mtime(self, row, f):
+        return not row or row['mtime'] < f.mtime
+
+    def _should_transfer_size(self, row, f):
+        return not row or row['size'] != f.size
 
     def purge_remote(self):
         """
@@ -181,7 +191,7 @@ class B2SyncManager(object):
         c.close()
 
 
-def sync(source_uri, dest_uri, account_id, app_key, workers=10, exclude=[]):
+def sync(source_uri, dest_uri, account_id, app_key, workers=10, exclude=[], compare_method="mtime"):
     source = urlparse(source_uri)
     dest = urlparse(dest_uri)
 
@@ -202,5 +212,5 @@ def sync(source_uri, dest_uri, account_id, app_key, workers=10, exclude=[]):
     assert source_provider is not None
     assert dest_receiver is not None
 
-    syncer = B2SyncManager(source_provider, dest_receiver, workers=workers, exclude_res=exclude)
+    syncer = B2SyncManager(source_provider, dest_receiver, workers=workers, exclude_res=exclude, compare_method=compare_method)
     syncer.sync()

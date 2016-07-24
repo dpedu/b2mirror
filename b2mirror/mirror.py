@@ -3,8 +3,8 @@ from urllib.parse import urlparse
 from itertools import islice, filterfalse
 from concurrent.futures import ThreadPoolExecutor
 
-from b2mirror.localplugin import LocalProvider
-from b2mirror.b2plugin import B2Reciever
+from b2mirror.plugin.localplugin import LocalProvider
+from b2mirror.plugin.b2plugin import B2Reciever
 from b2mirror.common import results_ok
 
 import logging

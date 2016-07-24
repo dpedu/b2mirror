@@ -8,7 +8,7 @@ setup(name='b2mirror',
       url='http://gitlab.xmopx.net/dave/b2mirror',
       author='dpedu',
       author_email='dave@davepedu.com',
-      packages=['b2mirror'],
+      packages=['b2mirror', 'b2mirror.plugin'],
       scripts=['bin/b2mirror'],
       zip_safe=False,
       install_requires=['b2==0.6.2']

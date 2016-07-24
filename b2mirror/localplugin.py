@@ -4,13 +4,11 @@ from b2mirror.base import Provider, Reciever
 from b2mirror.common import FileInfo
 
 
-
-
 class LocalProvider(Provider):
     """
     Iterates files on local disk
     """
-    max_chunk_size = 8*1024*1024
+    max_chunk_size = 8 * 1024 * 1024
 
     def __init__(self, local_path):
         super(LocalProvider, self).__init__()

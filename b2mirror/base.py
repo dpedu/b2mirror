@@ -11,6 +11,9 @@ class Provider(object):
     def __next__(self):
         raise NotImplemented()
 
+    def teardown(self):
+        pass
+
 
 class Reciever(object):
     """
@@ -21,3 +24,6 @@ class Reciever(object):
 
     def purge_file(self, file_path):
         raise NotImplemented()
+
+    def teardown(self):
+        pass

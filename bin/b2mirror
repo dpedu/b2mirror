@@ -4,9 +4,14 @@ import argparse
 import re
 
 from b2mirror import mirror
+import logging
 
 
 def main():
+    logging.basicConfig(level=logging.INFO)
+    logging.getLogger("requests").setLevel(logging.ERROR)
+    logging.getLogger("urllib3").setLevel(logging.ERROR)
+
     parser = argparse.ArgumentParser(description="Sync data to/from B2")
 
     parser.add_argument("-i", "--size", help="Compare by size instead of mtime", action="store_true", default=False)

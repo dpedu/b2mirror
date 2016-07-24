@@ -10,4 +10,7 @@ setup(name='b2mirror',
     author_email='dave@davepedu.com',
     packages=['b2mirror'],
     scripts=['bin/b2mirror'],
-    zip_safe=False)
+    zip_safe=False,
+    install_requires=[
+        'b2==0.6.2',
+    ])

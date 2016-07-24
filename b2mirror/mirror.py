@@ -46,6 +46,8 @@ class B2SyncManager(object):
 
         self.workers = workers
 
+        self.log.info("Initialized with %s workers, %s ignores", self.workers, len(self.exclude_res))
+
     def sync(self):
         """
         Sync the source to the dest. First uploads new local files, then cleans dead files from the remote.
@@ -55,14 +57,15 @@ class B2SyncManager(object):
         # Phase 2 - Delete files on the remote missing locally
         self.purge_remote()
         # Phase 3 - Tear down the src/dest modules
-        self.src.teardown()
-        self.dest.teardown()
+        self.cleanup()
 
     def sync_up(self):
         """
         Sync local files to the remote. All files in the DB will be marked as unseen. When a file is found locally it is
         again marked as seen. This state later used to clear deleted files from the destination
         """
+        self.log.info("beginning upload phase")
+
         chunk_size = 1000
 
         # if rel_path matches any of the REs, the filter is True and the file is skipped
@@ -89,10 +92,18 @@ class B2SyncManager(object):
         During upload phase it is expected that destination modules track state of what files have been seen on the
         local end. When local scan + upload is complete, the module uses this state to purge dead files on the remote.
         """
+        self.log.info("beginning remote purge phase")
         self.dest.purge()
+
+    def cleanup(self):
+        self.log.info("beginning cleanp phase")
+        self.src.teardown()
+        self.dest.teardown()
 
 
 def sync(source_uri, dest_uri, account_id, app_key, workers=10, exclude=[], compare_method="mtime"):
+    log = logging.getLogger("mirror")
+
     source = urlparse(source_uri)
     dest = urlparse(dest_uri)
 
@@ -112,6 +123,9 @@ def sync(source_uri, dest_uri, account_id, app_key, workers=10, exclude=[], comp
 
     assert source_provider is not None
     assert dest_receiver is not None
+
+    log.info("Source: %s", source_provider)
+    log.info("Dest: %s", dest_receiver)
 
     syncer = B2SyncManager(source_provider, dest_receiver,
                            workers=workers, exclude_res=exclude)

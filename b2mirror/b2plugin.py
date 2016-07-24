@@ -146,13 +146,13 @@ class B2Reciever(Reciever):
             row = c.execute("SELECT * FROM 'files' WHERE `path` = ?;", (f.rel_path,)).fetchone()
             if self.should_transfer(row, f):
 
-                print("Uploading:", f.rel_path)
+                self.log.info("Uploading: %s", f.rel_path)
                 try:
                     # upload the file. if a row existed it means there may be historic copies of the file already there
                     result = self.put_file(f, purge_historics=row is not None)
                 except:
-                    print("Failed:", f.rel_path)
-                    print("Unexpected error:", sys.exc_info()[0])
+                    self.log.error("Failed:", f.rel_path)
+                    self.log.error("Unexpected error:", sys.exc_info()[0])
                     raise
 
                 # The file was uploaded, commit it to the db
@@ -181,7 +181,7 @@ class B2Reciever(Reciever):
             with closing(self.db.cursor()) as c_del:
 
                 for purge_file in c.execute("SELECT * FROM 'files' WHERE seen=0;"):
-                    print("Delete on remote: ", purge_file["path"])
+                    self.log.info("Delete on remote: %s", purge_file["path"])
                     self.purge_file(purge_file["path"])
                     c_del.execute("DELETE FROM 'files' WHERE path=?;", (purge_file["path"],))
 

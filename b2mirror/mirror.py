@@ -12,7 +12,6 @@ from b2mirror.common import Result, results_ok
 # import logging
 # logging.basicConfig(level=logging.INFO)
 
-
 """
 How it works:
 
@@ -79,7 +78,7 @@ class B2SyncManager(object):
         tables = {
             "files": """
             CREATE TABLE `files` (
-              `path` varchar(1024) PRIMARY KEY,
+              `path` varchar(4096) PRIMARY KEY,
               `mtime` INTEGER,
               `size` INTEGER,
               `seen` BOOLEAN
@@ -141,6 +140,7 @@ class B2SyncManager(object):
         Future-called function that handles a single file. The file's modification time is checked against the database
         to see if the file has new content that should be uploaded or is untouched since the last sync
         """
+
         result = Result.failed
 
         c = self.db.cursor()
@@ -149,9 +149,6 @@ class B2SyncManager(object):
 
         if self.should_transfer(row, f):
 
-            # The file was uploaded, commit it to the db
-            c.execute("REPLACE INTO 'files' VALUES(?, ?, ?, ?);", (f.rel_path, f.mtime, f.size, 1))
-
             print("Uploading:", f.rel_path)
             try:
                 result = self.dest.put_file(f, purge_historics=row is not None)
@@ -159,6 +156,9 @@ class B2SyncManager(object):
                 print("Failed:", f.rel_path)
                 print("Unexpected error:", sys.exc_info()[0])
                 raise
+
+            # The file was uploaded, commit it to the db
+            c.execute("REPLACE INTO 'files' VALUES(?, ?, ?, ?);", (f.rel_path, f.mtime, f.size, 1))
 
         else:
             c.execute("UPDATE 'files' SET seen=1 WHERE `path` = ?;", (f.rel_path,)).fetchone()

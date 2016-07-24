@@ -22,7 +22,7 @@ def main():
 
     args = parser.parse_args()
 
-    ignore_res = [re.compile(i) for i in args.exclude]
+    ignore_res = [re.compile(i) for i in args.exclude] if args.exclude else []
 
     mirror.sync(
         args.source,
